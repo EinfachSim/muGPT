@@ -108,7 +108,24 @@ class DecoderOnlyTransformer(torch.nn.Module):
         self.ln_f = torch.nn.LayerNorm(self.cfg.emb_dim)
         self.head = torch.nn.Linear(self.cfg.emb_dim, self.cfg.vocab_size, bias=False)
 
+        # initialize weights
+        self.apply(self._init_weights)
+
+        # scale residual projections by 1/sqrt(2 * num_layers) to keep the residual stream variance stable at initialization
+        for name, param in self.named_parameters():
+            if name.endswith("attn_proj.weight") or name.endswith("l2.weight"):
+                torch.nn.init.normal_(param, mean=0.0, std=0.02 / math.sqrt(2 * self.cfg.num_layers))
+
         self.head.weight = self.token_emb.weight #weight tying
+    
+    def _init_weights(self, module):
+        if isinstance(module, torch.nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, torch.nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+
     
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
