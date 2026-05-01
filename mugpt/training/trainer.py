@@ -46,7 +46,8 @@ class VanillaTrainer:
 
     def train(self):
         for step, (x,y) in enumerate(self.train_dataloader):
-
+            if step >= self.config.max_steps:
+                break
             self.optimizer.zero_grad()
             x, y = x.to(self.device), y.to(self.device) # x and y here are batches
 
