@@ -21,6 +21,7 @@ trainer:
   log_every: 10
   eval_every: 25
   eval_batches: 5
+  warmup_steps: 200
  
 wandb:
   project: mugpt

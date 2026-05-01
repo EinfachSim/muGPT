@@ -3,6 +3,7 @@ from ..loss import BaseLoss
 from ..logger.base import BaseLogger
 from torch.utils.data import DataLoader
 from dataclasses import dataclass, asdict
+import math
 
 @dataclass
 class TrainerConfig:
@@ -10,6 +11,7 @@ class TrainerConfig:
     lr: float = 3e-4
     weight_decay: float = 0.1
     grad_clip: float = 1.0
+    warmup_steps: int = 200
     # training
     max_steps: int = 1000
     batch_size: int = 32
@@ -43,11 +45,27 @@ class VanillaTrainer:
         self.optimizer = self._configure_optimizer()
         self.device = self.config.device
         self.model.to(self.device)
+    
+    def _get_lr(self, step: int) -> float:
+        # warmup phase
+        if step < self.config.warmup_steps:
+            return self.config.lr * step / self.config.warmup_steps
+        
+        # cosine decay phase
+        progress = (step - self.config.warmup_steps) / (self.config.max_steps - self.config.warmup_steps)
+        return self.config.lr * 0.5 * (1.0 + math.cos(math.pi * progress))
 
     def train(self):
         for step, (x,y) in enumerate(self.train_dataloader):
             if step >= self.config.max_steps:
                 break
+
+            # LR scheduling
+            lr = self._get_lr(step)
+            for param_group in self.optimizer.param_groups:
+                param_group["lr"] = lr
+
+
             self.optimizer.zero_grad()
             x, y = x.to(self.device), y.to(self.device) # x and y here are batches
 
@@ -60,7 +78,7 @@ class VanillaTrainer:
 
             #Logging
             if step % self.config.log_every == 0:
-                self.logger.log({"train_loss": loss.item()}, step=step)
+                self.logger.log({"train_loss": loss.item(), "learning rate": lr}, step=step)
                 print(f"TRAIN LOSS: {loss.item()}")
 
             if step % self.config.eval_every == 0:
