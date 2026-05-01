@@ -22,7 +22,7 @@ class CausalAttentionBlock(torch.nn.Module):
         super().__init__()
         self.c_attention_head = torch.nn.Linear(emb_dim, 3*emb_dim, bias = bias)
 
-        self.attn_proj = torch.nn.Linear(emb_dim, emb_dim)
+        self.attn_proj = torch.nn.Linear(emb_dim, emb_dim, bias=bias)
 
         self.emb_dim = emb_dim
         self.num_heads = num_heads
@@ -58,12 +58,12 @@ class CausalAttentionBlock(torch.nn.Module):
         return out
     
 class FeedForwardBlock(torch.nn.Module):
-    def __init__(self, in_dim: int, dropout=0.15):
+    def __init__(self, in_dim: int, dropout=0.15, bias=False):
         super().__init__()
 
-        self.l1 = torch.nn.Linear(in_dim, 4*in_dim)
+        self.l1 = torch.nn.Linear(in_dim, 4*in_dim, bias=bias)
         self.gelu = torch.nn.GELU()
-        self.l2 = torch.nn.Linear(4*in_dim, in_dim)
+        self.l2 = torch.nn.Linear(4*in_dim, in_dim, bias=bias)
         self.dropout = torch.nn.Dropout(dropout)
     
     def forward(self, x):
@@ -80,7 +80,7 @@ class TransformerBlock(torch.nn.Module):
 
         self.attn_block = CausalAttentionBlock(emb_dim, num_heads, seq_len, bias, dropout)
 
-        self.ff_block = FeedForwardBlock(emb_dim, dropout)
+        self.ff_block = FeedForwardBlock(emb_dim, dropout, bias)
 
         self.layernorm1 = torch.nn.LayerNorm(emb_dim)
         self.layernorm2 = torch.nn.LayerNorm(emb_dim)
@@ -94,10 +94,10 @@ class TransformerBlock(torch.nn.Module):
 
 class DecoderOnlyTransformer(torch.nn.Module):
     def __init__(self, model_config):
-
-        self.cfg = model_config
         
         super().__init__()
+
+        self.cfg = model_config
 
         self.token_emb = torch.nn.Embedding(self.cfg.vocab_size, self.cfg.emb_dim)
 
