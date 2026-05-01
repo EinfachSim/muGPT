@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mugpt"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "torch",
+    "datasets",
+    "tiktoken",
+    "numpy",
+    "wandb"
+]
+
+[tool.setuptools.packages.find]
+include = ["mugpt*"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock",
+    "mypy",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests that call external APIs (deselect with -m 'not integration')",
+]
+testpaths = ["tests"]

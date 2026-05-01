@@ -1,0 +1,7 @@
+env/
+*.pyc
+__pycache__/
+mugpt.egg-info/
+data/
+checkpoints/
+wandb/

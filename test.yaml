@@ -1,0 +1,27 @@
+model:
+  vocab_size: 50257
+  emb_dim: 128
+  num_heads: 4
+  num_layers: 4
+  seq_len: 256
+  dropout: 0.1
+  bias: false
+ 
+data:
+  train: data/tinystories_train.bin
+  val: data/tinystories_val.bin
+ 
+trainer:
+  lr: 3e-4
+  weight_decay: 0.1
+  grad_clip: 1.0
+  max_steps: 50
+  batch_size: 8
+  device: mps
+  log_every: 10
+  eval_every: 25
+  eval_batches: 5
+ 
+wandb:
+  project: mugpt
+  run_name: test-run
