@@ -67,6 +67,12 @@ def parse_args() -> argparse.Namespace:
         default=4,
         help="Number of workers for parallel tokenization (default: 4)",
     )
+    parser.add_argument(
+        "--quality",
+        type=str,
+        default="",
+        help="For RedPajama Quality filters"
+    )
     return parser.parse_args()
 
 
@@ -97,6 +103,8 @@ def prepare(args: argparse.Namespace) -> None:
         split=args.split,
         streaming=args.streaming
     )
+    if args.quality != "":
+        dataset = dataset.filter(lambda x: x["quality_signals"][args.quality] > 4)
 
     print("Tokenizing...")
     if args.streaming:
