@@ -1,5 +1,13 @@
 """
 Preprocessing script for HuggingFace datasets.
+
+Tokenizes a HuggingFace text dataset and writes a flat binary file of token
+ids to disk. Each document is separated by the tokenizer's EOT token so the
+model sees document boundaries during training.
+
+The output .bin file is a flat uint16 array that can be memory-mapped or
+loaded directly during training.
+
 Usage:
     # Small slice for local testing
     python scripts/prepare_hf.py \
@@ -13,6 +21,12 @@ Usage:
         --split train \
         --output data/train.bin \
         --streaming
+
+    # Limit samples for quick iteration
+    python scripts/prepare_hf.py \
+        --dataset roneneldan/TinyStories \
+        --split train[:1%] \
+        --output data/train_small.bin
 """
 
 import argparse
@@ -67,12 +81,6 @@ def parse_args() -> argparse.Namespace:
         default=4,
         help="Number of workers for parallel tokenization (default: 4)",
     )
-    parser.add_argument(
-        "--quality",
-        type=str,
-        default="",
-        help="For RedPajama Quality filters"
-    )
     return parser.parse_args()
 
 
@@ -101,21 +109,26 @@ def prepare(args: argparse.Namespace) -> None:
     dataset = load_dataset(
         args.dataset,
         split=args.split,
-        streaming=args.streaming
+        streaming=args.streaming,
+        trust_remote_code=True,
     )
-    if args.quality != "":
-        dataset = dataset.filter(lambda x: x["quality_signals"][args.quality] > 4)
 
-    print("Tokenizing...")
+    print("Tokenizing and writing...")
+    total_tokens = 0
+
     if args.streaming:
-        # In streaming mode we can't use .map() with multiprocessing,
-        # so we iterate and tokenize on the fly
-        all_ids = []
-        for sample in dataset:
-            tokens = tokenizer.encode_ordinary(sample[args.text_column])
-            tokens.append(tokenizer.eot_token)
-            all_ids.extend(tokens)
+        # streaming: tokenize and write sample by sample
+        with open(args.output, "wb") as f:
+            for sample in dataset:
+                tokens = tokenizer.encode_ordinary(sample[args.text_column])
+                tokens.append(tokenizer.eot_token)
+                arr = np.array(tokens, dtype=np.uint16)
+                arr.tofile(f)
+                total_tokens += len(tokens)
+                if total_tokens % 10_000_000 == 0:
+                    print(f"  {total_tokens:,} tokens written...")
     else:
+        # non-streaming: use parallel .map() for tokenization, write incrementally
         tokenized = dataset.map(
             tokenize,
             batched=True,
@@ -124,17 +137,17 @@ def prepare(args: argparse.Namespace) -> None:
             desc="Tokenizing",
             remove_columns=dataset.column_names,
         )
-        all_ids = []
-        for sample in tokenized:
-            all_ids.extend(sample["ids"])
+        with open(args.output, "wb") as f:
+            for sample in tokenized:
+                arr = np.array(sample["ids"], dtype=np.uint16)
+                arr.tofile(f)
+                total_tokens += len(sample["ids"])
+                if total_tokens % 10_000_000 == 0:
+                    print(f"  {total_tokens:,} tokens written...")
 
-    total_tokens = len(all_ids)
-    print(f"Total tokens: {total_tokens:,}")
+    file_size = os.path.getsize(args.output) / 1e6
+    print(f"Saved {total_tokens:,} tokens to {args.output} ({file_size:.1f} MB)")
 
-    # GPT-2 vocab fits in uint16 (max 65535, vocab size 50257)
-    arr = np.array(all_ids, dtype=np.uint16)
-    arr.tofile(args.output)
-    print(f"Saved {total_tokens:,} tokens to {args.output} ({arr.nbytes / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":
