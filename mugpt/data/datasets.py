@@ -8,7 +8,7 @@ class BinDataset(Dataset):
         self.seq_len = seq_len
 
     def __len__(self):
-        return len(self.data) - self.seq_len
+        return (len(self.data) - self.seq_len) // self.seq_len
 
     def __getitem__(self, idx):
         x = torch.from_numpy(self.data[idx:idx+self.seq_len].astype(np.int64))
