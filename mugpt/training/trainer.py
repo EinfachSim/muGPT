@@ -56,7 +56,10 @@ class VanillaTrainer:
         return self.config.lr * 0.5 * (1.0 + math.cos(math.pi * progress))
 
     def train(self):
+        print("Starting training", flush = True)
         for step, (x,y) in enumerate(self.train_dataloader):
+            if step == 0:
+                print(f"First batch fetched, VRAM: {torch.cuda.memory_allocated() / 1e9:.2f} GB", flush=True)
             if step >= self.config.max_steps:
                 break
 
