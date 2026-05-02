@@ -57,6 +57,7 @@ class VanillaTrainer:
 
     def train(self):
         print("Starting training", flush = True)
+        print(f"Train dataset size: {len(self.train_dataloader.dataset):,}", flush=True)
         for step, (x,y) in enumerate(self.train_dataloader):
             if step == 0:
                 print(f"First batch fetched, VRAM: {torch.cuda.memory_allocated() / 1e9:.2f} GB", flush=True)
