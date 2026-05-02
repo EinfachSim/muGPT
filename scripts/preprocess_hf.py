@@ -110,7 +110,6 @@ def prepare(args: argparse.Namespace) -> None:
         args.dataset,
         split=args.split,
         streaming=args.streaming,
-        trust_remote_code=True,
     )
 
     print("Tokenizing and writing...")
