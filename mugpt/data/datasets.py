@@ -11,6 +11,7 @@ class BinDataset(Dataset):
         return (len(self.data) - self.seq_len) // self.seq_len
 
     def __getitem__(self, idx):
-        x = torch.from_numpy(self.data[idx:idx+self.seq_len].astype(np.int64))
-        y = torch.from_numpy(self.data[idx+1:idx+self.seq_len+1].astype(np.int64))
+        start = idx * self.seq_len
+        x = torch.from_numpy(self.data[start:start + self.seq_len].astype(np.int64))
+        y = torch.from_numpy(self.data[start + 1:start + self.seq_len + 1].astype(np.int64))
         return x, y
