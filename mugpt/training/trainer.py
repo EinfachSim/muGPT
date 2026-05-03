@@ -5,6 +5,7 @@ from ..logger.base import BaseLogger
 from torch.utils.data import DataLoader
 from dataclasses import dataclass, asdict
 import math
+from itertools import cycle
 
 @dataclass
 class TrainerConfig:
@@ -59,18 +60,23 @@ class VanillaTrainer:
     def train(self, resume_from: str = None):
         start_step = 0
         if resume_from is not None:
+            print(self.config.max_steps)
             start_step = self.load_checkpoint(resume_from)
 
         print("Starting training", flush = True)
         print(f"Train dataset size: {len(self.train_dataloader.dataset):,}", flush=True)
-        for step, (x,y) in enumerate(self.train_dataloader):
+
+        data_iter = cycle(self.train_dataloader)
+
+        for step in range(start_step, self.config.max_steps):
+
             if step == 0:
                 print(f"First batch fetched, VRAM: {torch.cuda.memory_allocated() / 1e9:.2f} GB", flush=True)
             if step >= self.config.max_steps:
                 break
-            if step < start_step:
-                continue
 
+            x,y = next(data_iter)
+            
             # LR scheduling
             lr = self._get_lr(step)
             for param_group in self.optimizer.param_groups:
