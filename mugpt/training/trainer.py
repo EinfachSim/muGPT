@@ -99,7 +99,7 @@ class VanillaTrainer:
 
             #Logging
             if step % self.config.log_every == 0:
-                self.logger.log({"train_loss": batch_loss.item(), "learning rate": lr}, step=step)
+                self.logger.log({"train_loss": batch_loss, "learning rate": lr}, step=step)
                 print(f"TRAIN LOSS: {batch_loss}")
 
             if step % self.config.eval_every == 0:
