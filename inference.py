@@ -12,7 +12,7 @@ Usage:
 
 import argparse
 import torch
-import tiktoken
+from mugpt.tokenization import GPT2Tokenizer, BPETokenizer
 
 from mugpt.models.transformer import DecoderOnlyTransformer, ModelConfig
 
@@ -24,6 +24,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max_tokens", type=int, default=200)
     parser.add_argument("--temperature",type=float, default=0.8)
     parser.add_argument("--top_k",      type=int, default=50)
+    parser.add_argument("--encoding",      type=str, default="BPE")
+    parser.add_argument("--tok_path",      type=str, default=None)
     return parser.parse_args()
 
 
@@ -65,7 +67,7 @@ def main():
     print(f"Loaded checkpoint from {args.checkpoint}")
 
     # tokenize prompt
-    enc = tiktoken.get_encoding("gpt2")
+    enc = GPT2Tokenizer() if args.encoding == "gpt2" else BPETokenizer().load_from_file(args.tok_path)
     input_ids = torch.tensor(enc.encode(args.prompt), dtype=torch.long).unsqueeze(0).to(device)
 
     # generate

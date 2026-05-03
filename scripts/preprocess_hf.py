@@ -42,6 +42,7 @@ import os
 import numpy as np
 import tiktoken
 from datasets import load_dataset
+from mugpt.tokenization import GPT2Tokenizer, BPETokenizer
 
 
 def parse_args() -> argparse.Namespace:
@@ -75,8 +76,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--encoding",
         type=str,
-        default="gpt2",
-        help="Tiktoken encoding to use (default: gpt2)",
+        default="BPE",
+        help="tokenizer to use (gpt2 or BPE (default))",
     )
     parser.add_argument(
         "--streaming",
@@ -93,6 +94,18 @@ def parse_args() -> argparse.Namespace:
         "--include_val",
         action="store_true",
         help="Randomly sample 1%% of data as validation set and write alongside train",
+    )
+    parser.add_argument(
+        "--vocab_size",
+        type=int,
+        default=32000,
+        help="Vocab size for training tokenizers (ignored when using GPT2Tokenizer)",
+    )
+    parser.add_argument(
+        "--tok_out",
+        type=str,
+        default="data/tokenizer.json",
+        help="Output path for the trained tokenizer",
     )
     return parser.parse_args()
 
@@ -141,7 +154,6 @@ def write_dataset(dataset, output_path: str, tokenizer: tiktoken.Encoding,
         with open(output_path, "wb") as f:
             for sample in tokenized:
                 arr = np.array(sample["ids"], dtype=np.uint16)
-                print(arr.shape)
                 arr.tofile(f)
                 total_tokens += len(sample["ids"])
                 if total_tokens % 10_000_000 == 0:
@@ -152,7 +164,10 @@ def write_dataset(dataset, output_path: str, tokenizer: tiktoken.Encoding,
 
 
 def prepare(args: argparse.Namespace) -> None:
-    tokenizer = tiktoken.get_encoding(args.encoding)
+    tokenizer = BPETokenizer()
+    if args.encoding == "gpt2":
+        tokenizer = GPT2Tokenizer()
+        
     print(f"Loaded tiktoken encoding: {args.encoding}")
     print(f"Vocabulary size: {tokenizer.n_vocab}")
 
@@ -162,6 +177,8 @@ def prepare(args: argparse.Namespace) -> None:
         split=args.split,
         streaming=args.streaming,
     )
+
+    tokenizer.fit(dataset, args.vocab_size, args.tok_out, args.text_column)
 
     if args.include_val:
         if args.streaming:

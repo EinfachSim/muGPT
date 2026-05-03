@@ -8,3 +8,4 @@ wandb/
 *.bin
 .DS_Store
 checkpoints_test/
+test.json

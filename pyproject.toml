@@ -11,7 +11,8 @@ dependencies = [
     "datasets",
     "tiktoken",
     "numpy",
-    "wandb"
+    "wandb",
+    "tokenizers"
 ]
 
 [tool.setuptools.packages.find]
