@@ -4,7 +4,7 @@ import torch
 
 class BinDataset(Dataset):
     def __init__(self, path: str, seq_len: int):
-        self.data = np.fromfile(path, dtype=np.uint16)
+        self.data = np.memmap(path, dtype=np.uint16, mode='r')
         self.seq_len = seq_len
 
     def __len__(self):
