@@ -24,6 +24,7 @@ trainer:
   warmup_steps: 10
   checkpoint_dir: checkpoints
   checkpoint_every: 100
+  gradient_accumulation_steps: 10
  
 wandb:
   project: mugpt

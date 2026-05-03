@@ -24,6 +24,7 @@ class TrainerConfig:
     eval_batches: int = 50
     checkpoint_every: int = 200
     checkpoint_dir: str = "checkpoints"
+    gradient_accumulation_steps: int = 1
     def __post_init__(self):
         self.lr = float(self.lr)
 
@@ -58,6 +59,7 @@ class VanillaTrainer:
         return self.config.lr * 0.5 * (1.0 + math.cos(math.pi * progress))
 
     def train(self, resume_from: str = None):
+        print(self.config.gradient_accumulation_steps)
         start_step = 0
         if resume_from is not None:
             print(self.config.max_steps)
@@ -82,16 +84,16 @@ class VanillaTrainer:
             for param_group in self.optimizer.param_groups:
                 param_group["lr"] = lr
 
-
-            self.optimizer.zero_grad()
             x, y = x.to(self.device), y.to(self.device) # x and y here are batches
 
             logits = self.model(x)
-            loss = self.loss_fn(logits, y)
+            loss = self.loss_fn(logits, y) / self.config.gradient_accumulation_steps
 
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-            self.optimizer.step()
+            if (step + 1) % self.config.gradient_accumulation_steps == 0:
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
             #Logging
             if step % self.config.log_every == 0:
