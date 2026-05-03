@@ -7,3 +7,4 @@ checkpoints/
 wandb/
 *.bin
 .DS_Store
+checkpoints_test/
