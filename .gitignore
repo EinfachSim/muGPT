@@ -5,3 +5,5 @@ mugpt.egg-info/
 ./data/
 checkpoints/
 wandb/
+*.bin
+.DS_Store

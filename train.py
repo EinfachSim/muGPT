@@ -24,6 +24,7 @@ from mugpt.training import VanillaTrainer, TrainerConfig
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Path to YAML config file")
+    parser.add_argument("--resume_from", type=str, default=None, help="Path to checkpoint to resume from")
     return parser.parse_args()
 
 
@@ -81,7 +82,7 @@ def main():
         config=trainer_config,
     )
 
-    trainer.train()
+    trainer.train(resume_from=args.resume_from)
     logger.close()
 
 

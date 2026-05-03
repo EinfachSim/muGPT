@@ -1,3 +1,4 @@
+import os
 import torch
 from ..loss import BaseLoss
 from ..logger.base import BaseLogger
@@ -55,7 +56,11 @@ class VanillaTrainer:
         progress = (step - self.config.warmup_steps) / (self.config.max_steps - self.config.warmup_steps)
         return self.config.lr * 0.5 * (1.0 + math.cos(math.pi * progress))
 
-    def train(self):
+    def train(self, resume_from: str = None):
+        start_step = 0
+        if resume_from is not None:
+            start_step = self.load_checkpoint(resume_from)
+
         print("Starting training", flush = True)
         print(f"Train dataset size: {len(self.train_dataloader.dataset):,}", flush=True)
         for step, (x,y) in enumerate(self.train_dataloader):
@@ -63,6 +68,8 @@ class VanillaTrainer:
                 print(f"First batch fetched, VRAM: {torch.cuda.memory_allocated() / 1e9:.2f} GB", flush=True)
             if step >= self.config.max_steps:
                 break
+            if step < start_step:
+                continue
 
             # LR scheduling
             lr = self._get_lr(step)
@@ -122,6 +129,7 @@ class VanillaTrainer:
         return torch.optim.AdamW(param_groups, lr=self.config.lr)
 
     def save_checkpoint(self, step: int) -> None:
+        os.makedirs(self.config.checkpoint_dir, exist_ok=True)
         checkpoint = {
             "step": step,
             "model_state_dict": self.model.state_dict(),

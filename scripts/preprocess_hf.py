@@ -141,6 +141,7 @@ def write_dataset(dataset, output_path: str, tokenizer: tiktoken.Encoding,
         with open(output_path, "wb") as f:
             for sample in tokenized:
                 arr = np.array(sample["ids"], dtype=np.uint16)
+                print(arr.shape)
                 arr.tofile(f)
                 total_tokens += len(sample["ids"])
                 if total_tokens % 10_000_000 == 0:
