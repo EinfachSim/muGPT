@@ -72,32 +72,34 @@ class VanillaTrainer:
 
         for step in range(start_step, self.config.max_steps):
 
+            self.optimizer.zero_grad()
+
             if step == 0:
                 print(f"First batch fetched, VRAM: {torch.cuda.memory_allocated() / 1e9:.2f} GB", flush=True)
             if step >= self.config.max_steps:
                 break
 
-            x,y = next(data_iter)
-            
             # LR scheduling
             lr = self._get_lr(step)
             for param_group in self.optimizer.param_groups:
                 param_group["lr"] = lr
 
-            x, y = x.to(self.device), y.to(self.device) # x and y here are batches
+            batch_loss = 0
+            for micro_step in range(self.config.gradient_accumulation_steps):
 
-            logits = self.model(x)
-            loss = self.loss_fn(logits, y) / self.config.gradient_accumulation_steps
-
-            loss.backward()
-            if (step + 1) % self.config.gradient_accumulation_steps == 0:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-                self.optimizer.step()
-                self.optimizer.zero_grad()
+                x,y = next(data_iter)
+                x, y = x.to(self.device), y.to(self.device) # x and y here are batches
+                logits = self.model(x)
+                loss = self.loss_fn(logits, y) / self.config.gradient_accumulation_steps
+                loss.backward()
+                batch_loss += loss
+            
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            self.optimizer.step()
 
             #Logging
             if step % self.config.log_every == 0:
-                self.logger.log({"train_loss": loss.item(), "learning rate": lr}, step=step)
+                self.logger.log({"train_loss": batch_loss.item(), "learning rate": lr}, step=step)
                 print(f"TRAIN LOSS: {loss.item()}")
 
             if step % self.config.eval_every == 0:
@@ -106,6 +108,8 @@ class VanillaTrainer:
 
             if step % self.config.checkpoint_every == 0:
                 self.save_checkpoint(step)
+        
+        self.save_checkpoint(self.config.max_steps)
         
     def evaluate(self, num_batches: int) -> float:
         self.model.eval()
