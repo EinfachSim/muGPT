@@ -92,7 +92,7 @@ class VanillaTrainer:
                 logits = self.model(x)
                 loss = self.loss_fn(logits, y) / self.config.gradient_accumulation_steps
                 loss.backward()
-                batch_loss += loss
+                batch_loss += loss.item()
             
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
@@ -100,7 +100,7 @@ class VanillaTrainer:
             #Logging
             if step % self.config.log_every == 0:
                 self.logger.log({"train_loss": batch_loss.item(), "learning rate": lr}, step=step)
-                print(f"TRAIN LOSS: {loss.item()}")
+                print(f"TRAIN LOSS: {batch_loss}")
 
             if step % self.config.eval_every == 0:
                 val_loss = self.evaluate(self.config.eval_batches)
