@@ -4,6 +4,7 @@ from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from tokenizers.pre_tokenizers import ByteLevel
 from tokenizers.trainers import BpeTrainer
+from tokenizers.decoders import ByteLevel as ByteLevelDecoder
 
 class BaseTokenizer(ABC):
     @abstractmethod
@@ -86,7 +87,6 @@ class BPETokenizer(BaseTokenizer):
         )
 
         self.tok.train_from_iterator(batch_iterator(), trainer=trainer, length=len(dataset))
-
         self.tok.save(out_path)
     
     def encode_ordinary(self, text):
@@ -100,6 +100,7 @@ class BPETokenizer(BaseTokenizer):
         return self.tok.encode(text).ids
     
     def decode(self, ids):
+        self.tok.decoder = ByteLevelDecoder()
         return self.tok.decode(ids)
 
     
