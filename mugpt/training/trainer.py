@@ -5,7 +5,6 @@ from ..logger.base import BaseLogger
 from torch.utils.data import DataLoader
 from dataclasses import dataclass, asdict
 import math
-from itertools import cycle
 
 @dataclass
 class TrainerConfig:
@@ -27,6 +26,11 @@ class TrainerConfig:
     gradient_accumulation_steps: int = 1
     def __post_init__(self):
         self.lr = float(self.lr)
+
+def cycle_loader(loader):
+    while True:
+        for batch in loader:
+            yield batch
 
 class VanillaTrainer:
     def __init__(
@@ -59,7 +63,7 @@ class VanillaTrainer:
         return self.config.lr * 0.5 * (1.0 + math.cos(math.pi * progress))
 
     def train(self, resume_from: str = None):
-        print(self.config.gradient_accumulation_steps)
+        self.model.train()
         start_step = 0
         if resume_from is not None:
             print(self.config.max_steps)
@@ -68,7 +72,7 @@ class VanillaTrainer:
         print("Starting training", flush = True)
         print(f"Train dataset size: {len(self.train_dataloader.dataset):,}", flush=True)
 
-        data_iter = cycle(self.train_dataloader)
+        data_iter = cycle_loader(self.train_dataloader)
 
         for step in range(start_step, self.config.max_steps):
 
