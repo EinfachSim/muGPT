@@ -52,6 +52,7 @@ class VanillaTrainer:
         self.optimizer = self._configure_optimizer()
         self.device = self.config.device
         self.model.to(self.device)
+        self.model = torch.compile(self.model)
     
     def _get_lr(self, step: int) -> float:
         # warmup phase
