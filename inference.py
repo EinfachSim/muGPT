@@ -12,6 +12,7 @@ Usage:
 
 import argparse
 import torch
+torch.set_float32_matmul_precision('high')
 from mugpt.tokenization import GPT2Tokenizer, BPETokenizer
 
 from mugpt.models.transformer import DecoderOnlyTransformer, ModelConfig
@@ -63,6 +64,7 @@ def main():
     checkpoint = torch.load(args.checkpoint, map_location=device)
     model_config = ModelConfig(**checkpoint["config"])
     model = DecoderOnlyTransformer(model_config).to(device)
+    model = torch.compile(model)
     model.load_state_dict(checkpoint["model_state_dict"])
     print(f"Loaded checkpoint from {args.checkpoint}")
 

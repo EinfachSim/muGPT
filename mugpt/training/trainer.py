@@ -1,10 +1,12 @@
 import os
 import torch
+torch.set_float32_matmul_precision('high')
 from ..loss import BaseLoss
 from ..logger.base import BaseLogger
 from torch.utils.data import DataLoader
 from dataclasses import dataclass, asdict
 import math
+import psutil, os
 
 @dataclass
 class TrainerConfig:
@@ -104,8 +106,14 @@ class VanillaTrainer:
 
             #Logging
             if step % self.config.log_every == 0:
-                self.logger.log({"train_loss": batch_loss, "learning rate": lr}, step=step)
                 print(f"TRAIN LOSS: {batch_loss}")
+                process = psutil.Process(os.getpid())
+                ram_gb = process.memory_info().rss / 1e9
+                self.logger.log({
+                    "train_loss": batch_loss,
+                    "learning_rate": lr,
+                    "ram_gb": ram_gb
+                }, step=step)
 
             if step % self.config.eval_every == 0:
                 val_loss = self.evaluate(self.config.eval_batches)
