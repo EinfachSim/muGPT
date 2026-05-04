@@ -92,7 +92,7 @@ class VanillaTrainer:
             for micro_step in range(self.config.gradient_accumulation_steps):
 
                 x,y = next(data_iter)
-                x, y = x.to(self.device), y.to(self.device) # x and y here are batches
+                x, y = x.to(self.device, non_blocking=True), y.to(self.device, non_blocking=True)
                 logits = self.model(x)
                 loss = self.loss_fn(logits, y) / self.config.gradient_accumulation_steps
                 loss.backward()
